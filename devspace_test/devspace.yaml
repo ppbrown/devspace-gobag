@@ -1,0 +1,28 @@
+version: v2beta1
+name: devspace-test
+
+images:
+  app:
+    image: zot.gobag.svc.cluster.local:30500/devspace-test
+    tags: ["latest"]
+    dockerfile: ./Dockerfile
+    context: ./
+    buildKit:
+      # Only needed if you have the standalone `buildx` binary rather than
+      # the Docker CLI's buildx plugin (gobag.sh install says which you have).
+      # Delete this line if you have the "docker buildx" plugin instead.
+      command: ["buildx"]
+
+      # The registry is plain HTTP; without this the push fails with
+      # "http: server gave HTTP response to HTTPS client".
+      args: ["--output", "type=image,push=true,registry.insecure=true"]
+
+      # Build in-cluster with the builder gobag.sh install created
+      # (devspace-gobag, in the gobag namespace), shared across projects.
+      inCluster:
+        namespace: gobag
+
+# Load-bearing: left unset, devspace deploys its own registry and rewrites
+# image URLs to localhost:<nodeport>, bypassing Zot entirely.
+localRegistry:
+  enabled: false

@@ -1,0 +1,41 @@
+version: v2beta1
+name: gobag-example
+
+# Copy this file into your project and adjust name: and images.app.image.
+# devspace init is unnecessary: this file already defines images.app, so
+# devspace build/dev/deploy read it directly.
+
+images:
+  app:
+    # The registry gobag.sh deploys.
+    image: zot.gobag.svc.cluster.local:30500/app
+    # Note the field is "tags" (a list), not "tag". Omit it and devspace
+    # generates a random tag per build.
+    tags: ["latest"]
+    dockerfile: ./Dockerfile
+    context: ./
+    buildKit:
+      # Only needed if you have the standalone `buildx` binary rather than the
+      # Docker CLI with its buildx plugin. devspace defaults to
+      # ["docker", "buildx"], which fails if the docker CLI is absent.
+      # `gobag.sh install` tells you which case you are in.
+      command: ["buildx"]
+
+      # The registry is plain HTTP; without this the push fails with
+      # "http: server gave HTTP response to HTTPS client".
+      args: ["--output", "type=image,push=true,registry.insecure=true"]
+
+      # Build in-cluster with the builder gobag.sh install created
+      # (devspace-gobag, in the gobag namespace), shared across projects.
+      inCluster:
+        namespace: gobag
+
+# Load-bearing. Left unset, devspace decides it has no push credentials,
+# deploys its *own* registry, and silently rewrites every image URL to
+# localhost:<nodeport> - bypassing Zot entirely.
+localRegistry:
+  enabled: false
+
+# No deployments:/dev: section: how to run the container depends on the app.
+# Add one, or run `devspace init` with this file in place - since images.app
+# is already defined, init should only need to ask about deployment.
